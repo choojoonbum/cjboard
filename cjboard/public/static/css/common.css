@@ -1,0 +1,50 @@
+body {
+  padding-top: 50px;
+}
+.container-fluid {
+  padding: 0;
+  background-color: white;
+}
+.container-fluid.content {
+  padding: 100px 0;
+  text-align: center;
+}
+.navbar .nav-main {
+  padding: 21px 0;
+}
+.navbar .nav-main>li {
+  margin: 0 50px;
+}
+.navbar .nav-main>li>a {
+  font-weight: bold;
+  font-size: 20px;
+}
+.navbar .nav-main>li.active>a,
+.navbar .nav-main>li.active>a:hover,
+.navbar .nav-main>li.active>a:focus {
+  color: #FF8000;
+  background-color: #fff
+}
+.foot-bn {
+  background-color: #0f0f0f;
+}
+.foot-in {
+  padding: 40px 0;
+  background-color: #1f1f1f;
+  color: white;
+}
+footer .navbar-nav >li > a {
+  color: #ffffff;
+  background: url(/static/imgs/vline.jpg) no-repeat left center;
+}
+footer .navbar-nav >li:first-child > a {
+  background: none
+}
+footer .navbar-nav>li>a:hover,
+footer .navbar-nav>li>a:focus {
+  background-color: #0f0f0f
+}
+.copyright {
+  padding-top: 20px;
+}
+
