@@ -30,8 +30,20 @@ $routes->set404Override();
 // We get a performance increase by specifying the default
 // route since we don't have to scan directories.
 $routes->get('/', 'Home::index');
+$routes->get('captcha', 'CaptchaController::index');
+$routes->get('captcha/get', 'CaptchaController::getCaptcha');
 
-$routes->get('/member/register', 'MemberController::register');
+$memberRoutes = [
+    'member/agreement' => 'MemberController::agreement',
+    'member/register' => 'MemberController::register',
+    'member/result' => 'MemberController::result',
+    'member/logout' => 'MemberController::logout',
+    'member/ajax_email_check' => 'MemberController::ajaxEmailCheck',
+    'member/ajax_password_check' => 'MemberController::ajaxPasswordCheck',
+    'member/ajax_nickname_check' => 'MemberController::ajaxNicknameCheck',
+    'member/ajax_userid_check' => 'MemberController::ajaxUseridCheck',
+];
+$routes->map($memberRoutes);
 
 /*
  * --------------------------------------------------------------------

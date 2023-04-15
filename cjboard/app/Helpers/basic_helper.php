@@ -12,10 +12,21 @@ if ( ! function_exists('debug')) {
     }
 }
 
-if ( ! function_exists('element'))
+if ( ! function_exists('val'))
 {
-    function element($item, array $array, $default = NULL)
+    function val($item, array $array, $default = NULL)
     {
         return array_deep_search($item, $array) ? $array[$item] : $default;
+    }
+}
+
+if ( ! function_exists('btAlert')) {
+    function btAlert($message = '')
+    {
+        if (empty($message)) {
+            return false;
+        }
+        return "<div class=\"alert fade in alert-danger alert-auto-close\"><a href=\"#\" class=\"close\" data-dismiss=\"alert\">&times;</a>".$message."</div>";
+
     }
 }

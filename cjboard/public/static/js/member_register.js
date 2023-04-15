@@ -1,0 +1,113 @@
+
+	$.validator.addMethod('is_userid_available', function(value, element) {
+		var response = '';
+		$.ajax({
+			type: 'post',
+			url: cb_url + '/member/ajax_userid_check',
+			data : {
+				csrf_test_name: cb_csrf_hash,
+				userid : value
+			},
+			async: false,
+			dataType : 'json',
+			success : function(data) {
+				console.log(data);
+				if (data.result === 'available'){
+					response = true;
+				} else {
+					response = false;
+				}
+			}
+		});
+		return response;
+	}, '이 아이디는 사용하실 수 없습니다');
+
+
+	$.validator.addMethod('is_email_available', function(value, element) {
+		var response = '';
+		$.ajax({
+			type: 'post',
+			url: cb_url + '/member/ajax_email_check',
+			data : {
+				csrf_test_name: cb_csrf_hash,
+				email : value
+			},
+			async: false,
+			dataType : 'json',
+			success : function(data) {
+				console.log(data);
+				if (data.result === 'available'){
+					response = true;
+				} else {
+					response = false;
+				}
+			}
+		});
+		return response;
+	}, '이 이메일은 사용하실 수 없습니다');
+
+
+	$.validator.addMethod('is_password_available', function(value, element) {
+		var response = '';
+		$.ajax({
+			type: 'post',
+			url: cb_url + '/member/ajax_password_check',
+			data : {
+				csrf_test_name: cb_csrf_hash,
+				password : value
+			},
+			async: false,
+			dataType : 'json',
+			success : function(data) {
+				console.log(data);
+				if (data.result === 'available'){
+					response = true;
+				} else {
+					response = false;
+				}
+			}
+		});
+		return response;
+	}, '이 패스워드는 사용하실 수 없습니다');
+
+
+	$.validator.addMethod('is_nickname_available', function(value, element) {
+		var response = '';
+		$.ajax({
+			type: 'post',
+			url: cb_url + '/member/ajax_nickname_check',
+			data : {
+				csrf_test_name: cb_csrf_hash,
+				nickname : value
+			},
+			async: false,
+			dataType : 'json',
+			success : function(data) {
+				console.log(data);
+				if (data.result === 'available'){
+					response = true;
+				} else {
+					response = false;
+				}
+			}
+		});
+		return response;
+	}, '이 닉네임은 사용하실 수 없습니다');
+
+	var captcha_word = '';
+
+	$(function() {
+		$.ajax({
+			url : cb_url + '/captcha/get',
+			type : 'get',
+			dataType : 'json',
+			success : function(data) {
+				captcha_word= data.word;
+			}
+		});
+		$.validator.addMethod('captchaKey', function(value, element) {
+			console.log(captcha_word)
+			return this.optional(element) || value.toLowerCase() === captcha_word.toLowerCase();
+		});
+	});
+

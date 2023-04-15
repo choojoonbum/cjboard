@@ -28,9 +28,15 @@
     <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
     <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
+    <script type="text/javascript" src="<?= base_url('static/js/common.js') ?>"></script>
     <script type="text/javascript" src="<?= base_url('static/lib/jquery/jquery.validate.min.js') ?>"></script>
     <script type="text/javascript" src="<?= base_url('static/lib/jquery/jquery.validate.extension.js') ?>"></script>
+    <script type="text/javascript">
+        // 자바스크립트에서 사용하는 전역변수 선언
+        var cb_url = "<?= trim(site_url(), '/'); ?>";
+        var cb_csrf_hash = "<?= csrf_hash() ?>";
 
+    </script>
 </head>
 <body>
 <?= $this->include('header') ?>
@@ -38,7 +44,6 @@
     <?= $this->renderSection('content') ?>
 </div>
 <?= $this->include('footer') ?>
-
 
 </body>
 </html>

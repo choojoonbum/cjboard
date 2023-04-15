@@ -1,10 +1,24 @@
+<?php
+$memberService = service('MemberService');
+?>
 <nav class="navbar navbar-default navbar-fixed-top">
     <div class="container">
         <div class="collapse navbar-collapse navbar-right">
             <ul class="nav navbar-nav">
                 <li><a href="/">Home</a></li>
+            <?php
+            if ($memberService->isMember()) {
+            ?>
+                <li><a href="/member/logout">로그아웃</a></li>
+                <li><a href="/mypage">마이페이지</a></li>
+            <?php
+            } else {
+            ?>
                 <li><a href="/member/login">로그인</a></li>
-                <li><a href="/member/register">회원가입</a></li>
+                <li><a href="/member/agreement">회원가입</a></li>
+            <?php
+            }
+            ?>
             </ul>
         </div>
     </div>
