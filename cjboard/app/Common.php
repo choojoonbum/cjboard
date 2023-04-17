@@ -30,7 +30,10 @@ if ( ! function_exists('config_item_db'))
 {
     function config_item_db($item)
     {
-        $config = model('ConfigModel')->find([$item]);
+        if (! $config = cache($item)) {
+            $config = model('ConfigModel')->find([$item]);
+            cache()->save($item, $config, 86400);
+        }
         return isset($config[0]['cfg_value']) ? $config[0]['cfg_value'] : NULL;
     }
 }
