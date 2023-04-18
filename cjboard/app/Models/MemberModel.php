@@ -14,4 +14,8 @@ class MemberModel extends Model
         'mem_open_profile','mem_denied','mem_email_cert','mem_register_datetime','mem_register_ip','mem_lastlogin_datetime','mem_lastlogin_ip','mem_is_admin',
         'mem_profile_content','mem_adminmemo','mem_following','mem_followed','mem_icon','mem_photo'];
 
+    public function getByUserid($userid) {
+        return $this->where(['mem_userid' => $userid])->first();
+    }
+
 }

@@ -146,4 +146,65 @@ class MyRules
         return true;
     }
 
+    public function check_id_pw(string $password, ?string &$error = null): bool {
+        $request = service('request');
+        $memberService= service('MemberService');
+        $userid = $request->getPost('mem_userid');
+        $max_login_try_count = (int) config_item_db('max_login_try_count');
+        $max_login_try_limit_second = (int) config_item_db('max_login_try_limit_second');
+
+        $loginfailnum = 0;
+        $loginfailmessage = '';
+        if ($max_login_try_count && $max_login_try_limit_second) {
+            $where = array(
+                'mll_ip' => $request->getIPAddress(),
+                'mll_datetime > ' => strtotime(time() - 86400 * 30),
+            );
+            $logindata = model('MemberLoginLogModel')->where($where)->orderBy('mll_id', 'DESC')->findAll();
+            if ($logindata && is_array($logindata)) {
+                foreach ($logindata as $key => $val) {
+                    if ((int) $val['mll_success'] === 0) {
+                        $loginfailnum++;
+                    } elseif ((int) $val['mll_success'] === 1) {
+                        break;
+                    }
+                }
+            }
+            if ($loginfailnum > 0 && $loginfailnum % $max_login_try_count === 0) {
+                $lastlogintrydatetime = $logindata[0]['mll_datetime'];
+                $next_login = strtotime($lastlogintrydatetime)
+                    + $max_login_try_limit_second
+                    - time();
+                if ($next_login > 0) {
+                    $error = '회원님은 패스워드를 연속으로 ' . $loginfailnum . '회 잘못 입력하셨기 때문에 '
+                        . $next_login . '초 후에 다시 로그인 시도가 가능합니다';
+                    return false;
+                }
+            }
+            $loginfailmessage = '<br />회원님은 ' . ($loginfailnum + 1)
+                . '회 연속으로 패스워드를 잘못입력하셨습니다. ';
+        }
+
+        $userinfo = model('MemberModel')->getByUserid($userid);
+        if ( ! val('mem_id', $userinfo) OR ! val('mem_password', $userinfo)) {
+            $error = '회원 아이디와 패스워드가 서로 맞지 않습니다' . $loginfailmessage;
+            $memberService->updateLoginLog(0, $userid, 0, '회원 아이디가 존재하지 않습니다');
+            return false;
+        } elseif ( ! password_verify($password, val('mem_password', $userinfo))) {
+            $error = '회원 아이디와 패스워드가 서로 맞지 않습니다' . $loginfailmessage;
+            $memberService->updateLoginLog(val('mem_id', $userinfo), $userid, 0, '패스워드가 올바르지 않습니다');
+            return false;
+        } elseif (val('mem_denied', $userinfo)) {
+            $error = '회원님의 아이디는 접근이 금지된 아이디입니다';
+            $memberService->updateLoginLog(val('mem_id', $userinfo), $userid, 0, '접근이 금지된 아이디입니다');
+            return false;
+        } elseif (val('mem_is_admin', $userinfo) && $request->getPost('autologin')) {
+            $error = '최고관리자는 자동로그인 기능을 사용할 수 없습니다';
+            return false;
+        }
+
+        return true;
+
+    }
+
 }

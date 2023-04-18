@@ -8,11 +8,25 @@ class MemberController extends BaseController
 {
     private $memberService;
 
-
     public function __construct()
     {
         $this->memberService = service('MemberService');
+    }
 
+    public function login()
+    {
+        $view = $this->memberService->login();
+        if (! $view['valid']){
+            if ($this->request->getPost('returnurl')) {
+                $this->session->setFlashdata('loginuserid', $this->request->getPost('mem_userid'));
+                return redirect(urldecode($this->request->getPost('returnurl')));
+            }
+            return view('member/login', $view);
+        } else {
+            //if ($this->memberService->changePassword()) return redirect('mypage/password_modify');
+            $urlAfterLogin = $this->request->getPost('url') ? urldecode($this->request->getPost('url')) : '/';
+            return redirect($urlAfterLogin);
+        }
     }
 
     public function agreement()

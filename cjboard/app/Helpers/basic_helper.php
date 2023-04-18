@@ -1,7 +1,7 @@
 <?php
 
 if ( ! function_exists('debug')) {
-    function debug($var)
+    function debug($var,$exit = false)
     {
         ob_start();
         print_r($var);
@@ -9,13 +9,15 @@ if ( ! function_exists('debug')) {
         ob_end_clean();
         $str = str_replace(" ", "&nbsp;", $str);
         echo nl2br("<span style='font-family:Tahoma, 굴림; font-size:9pt;'>$str</span>");
+        if ($exit) exit();
     }
 }
 
 if ( ! function_exists('val'))
 {
-    function val($item, array $array, $default = NULL)
+    function val($item, $array, $default = NULL)
     {
+        if (!is_array($array)) return $default;
         return array_deep_search($item, $array) ? $array[$item] : $default;
     }
 }

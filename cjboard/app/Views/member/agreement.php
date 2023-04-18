@@ -2,7 +2,7 @@
 <?= $this->section('content') ?>
 <div class="container">
     <?php
-    $attributes = array('class' => 'form-horizontal', 'name' => 'fregisterform', 'id' => 'fregisterform');
+    $attributes = array('class' => 'form-horizontal', 'name' => 'fregisterForm', 'id' => 'fregisterForm');
     echo form_open('', $attributes);
     echo btAlert(session()->getFlashdata('message'));
     ?>
@@ -51,7 +51,7 @@
 <script type="text/javascript">
     //<![CDATA[
     $(function() {
-        $('#fregisterform').validate({
+        $('#fregisterForm').validate({
             rules: {
                 agree: {required :true},
                 agree2: {required :true}
