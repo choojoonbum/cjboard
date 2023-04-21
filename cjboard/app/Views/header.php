@@ -36,7 +36,7 @@ $memberService = service('MemberService');
             <div id="navbar" class="collapse navbar-collapse ">
                 <ul class="nav navbar-nav nav-main">
                     <li class="active"><a href="#">제품정보</a></li>
-                    <li><a href="#">커뮤니티</a></li>
+                    <li><a href="/community/notice">커뮤니티</a></li>
                     <li><a href="#">고객센터</a></li>
                     <li><a href="#">협력사</a></li>
                 </ul>
