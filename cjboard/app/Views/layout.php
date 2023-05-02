@@ -15,6 +15,9 @@
     <script src="<?= base_url('static/lib/bootstrap/assets/js/ie10-viewport-bug-workaround.js') ?>"></script>
     <!-- Bootstrap core CSS -->
     <link href="<?= base_url('static/lib/bootstrap/dist/css/bootstrap.min.css') ?>" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/earlyaccess/nanumgothic.css" />
+    <link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/ui-lightness/jquery-ui.css" />
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <link href="<?= base_url('static/lib/bootstrap/assets/css/ie10-viewport-bug-workaround.css') ?>" rel="stylesheet">
     <link href="<?= base_url('static/css/nomalize.css') ?>" rel="stylesheet">

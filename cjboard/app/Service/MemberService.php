@@ -24,10 +24,21 @@ class MemberService {
 
     public function isAdmin($check = array())
     {
-        if ($this->item('mem_isAdmin')) {
+        if ($this->item('mem_is_admin')) {
             return 'super';
         }
-
+        if (val('group_id', $check)) {
+            $isGroupAdmin = service('BoardService')->isGroupAdmin(val('group_id', $check));
+            if ($isGroupAdmin) {
+                return 'group';
+            }
+        }
+        if (val('board_id', $check)) {
+            $isBoardAdmin = service('BoardService')->isAdmin(val('board_id', $check));
+            if ($isBoardAdmin) {
+                return 'board';
+            }
+        }
         return false;
     }
 
@@ -57,20 +68,10 @@ class MemberService {
     public function getMember()
     {
         if ($this->isMember()) {
-            if (empty($this->mb)) {
-                $member = $this->CI->Member_model->get_by_memid($this->isMember());
-                $extras = $this->get_all_extras(element('mem_id', $member));
-                if (is_array($extras)) {
-                    $member = array_merge($member, $extras);
-                }
-                $metas = $this->get_all_meta(element('mem_id', $member));
-                if (is_array($metas)) {
-                    $member = array_merge($member, $metas);
-                }
-                $member['social'] = $this->get_all_social_meta(element('mem_id', $member));
-                $this->mb = $member;
+            if (empty($this->member)) {
+                $this->member = $this->memberModel->getByMemid($this->isMember());
             }
-            return $this->mb;
+            return $this->member;
         } else {
             return false;
         }
@@ -162,10 +163,10 @@ class MemberService {
                 $hash = str_replace(
                     $vericode,
                     '',
-                    password_hash(random_string('alnum', 10) . element('mem_id', $userinfo) . ctimestamp() . element('mem_userid', $userinfo), PASSWORD_BCRYPT)
+                    password_hash(random_string('alnum', 10) . val('mem_id', $userinfo) . ctimestamp() . val('mem_userid', $userinfo), PASSWORD_BCRYPT)
                 );
                 $insertautologin = array(
-                    'mem_id' => element('mem_id', $userinfo),
+                    'mem_id' => val('mem_id', $userinfo),
                     'aul_key' => $hash,
                     'aul_ip' => $this->input->ip_address(),
                     'aul_datetime' => cdate('Y-m-d H:i:s'),

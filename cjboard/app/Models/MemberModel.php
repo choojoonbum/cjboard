@@ -18,4 +18,27 @@ class MemberModel extends Model
         return $this->where(['mem_userid' => $userid])->first();
     }
 
+    public function getByMemid($memid = 0, $select = '')
+    {
+        $memid = (int) $memid;
+        if (empty($memid) OR $memid < 1) {
+            return false;
+        }
+        $where = array('mem_id' => $memid);
+        return $this->getOne('', $select, $where);
+    }
+
+    public function getOne($primaryValue = '', $select = '', $where = '')
+    {
+        if ($primaryValue) {
+            $this->where($this->primaryKey, $primaryValue);
+        }
+        if ($where) {
+            $this->where($where);
+        }
+        $result = $this->find()[0];
+
+        return $result;
+    }
+
 }

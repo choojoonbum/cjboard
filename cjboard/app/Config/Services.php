@@ -2,6 +2,8 @@
 
 namespace Config;
 
+use App\Service\BoardService;
+use App\Service\BoardWriteService;
 use App\Service\MemberService;
 use CodeIgniter\Config\BaseService;
 
@@ -25,5 +27,19 @@ class Services extends BaseService
             return static::getSharedInstance('memberService');
         }
         return new MemberService();
+    }
+
+    public static function boardService($getShared = true) {
+        if ($getShared) {
+            return static::getSharedInstance('boardService');
+        }
+        return new BoardService();
+    }
+
+    public static function boardWriteService($getShared = true) {
+        if ($getShared) {
+            return static::getSharedInstance('boardWriteService');
+        }
+        return new BoardWriteService();
     }
 }

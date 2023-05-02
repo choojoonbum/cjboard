@@ -51,7 +51,9 @@ $memberRoutes = [
 $routes->map($memberRoutes);
 
 $communityRoutes = [
-    'community/notice' => 'BoardController::notice',
+    //'community/notice' => 'BoardController::notice',
+    'community/lists/([a-zA-Z0-9_-]+)' => 'BoardController::lists/$1',
+    'community/write/([a-zA-Z0-9_-]+)' => 'BoardController::write/$1',
 ];
 $routes->map($communityRoutes);
 /*
