@@ -3,3 +3,6 @@ $(document).ready(function(){
         $('.alert-auto-close').hide();
     }, 2500);
 });
+$(document).on('click', '.btn-history-back', function() {
+    history.back();
+});

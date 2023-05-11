@@ -2,9 +2,7 @@
 
 namespace App\Models;
 
-use CodeIgniter\Model;
-
-class MemberModel extends Model
+class MemberModel extends BaseModel
 {
     protected $table      = 'member';
     protected $primaryKey = 'mem_id';
@@ -26,19 +24,6 @@ class MemberModel extends Model
         }
         $where = array('mem_id' => $memid);
         return $this->getOne('', $select, $where);
-    }
-
-    public function getOne($primaryValue = '', $select = '', $where = '')
-    {
-        if ($primaryValue) {
-            $this->where($this->primaryKey, $primaryValue);
-        }
-        if ($where) {
-            $this->where($where);
-        }
-        $result = $this->find()[0];
-
-        return $result;
     }
 
 }

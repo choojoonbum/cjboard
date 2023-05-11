@@ -14,9 +14,6 @@ class BoardController extends BaseController
     }
     public function lists($brdKey = '')
     {
-        if (empty($brdKey)) {
-            show_404();
-        }
         $view = array();
         $view['view'] = array();
 
@@ -24,10 +21,15 @@ class BoardController extends BaseController
         return view('board/list',$view);
     }
 
-
-    public function notice()
+    public function post($post_id = 0)
     {
-        return view('board/notice');
+        try {
+            $view = $this->boardService->post($post_id);
+            return view('board/post',$view);
+        } catch (\Exception $e) {
+            alert($e->getMessage());
+        }
+
     }
 
 

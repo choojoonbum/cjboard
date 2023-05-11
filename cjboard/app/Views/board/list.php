@@ -35,7 +35,6 @@
             </thead>
             <tbody>
             <?php
-
 			if (val('list', val('data', val('list', $view)))) {
 				foreach (val('list', val('data', val('list', $view))) as $result) {
 			?>
@@ -84,6 +83,12 @@
 
             </tbody>
         </table>
+        <?php if (val('write_url', val('list', $view))) { ?>
+            <div class="pull-right">
+                <a href="<?php echo val('write_url', val('list', $view)); ?>" class="btn btn-primary">글쓰기</a>
+            </div>
+        <?php } ?>
+        <nav><?php echo val('paging', val('list', $view)); ?></nav>
     </div>
 
 <?= $this->endSection() ?>

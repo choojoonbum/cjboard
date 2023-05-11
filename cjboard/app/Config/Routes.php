@@ -47,15 +47,16 @@ $memberRoutes = [
     'member/ajax_nickname_check' => 'MemberController::ajaxNicknameCheck',
     'member/ajax_userid_check' => 'MemberController::ajaxUseridCheck',
 ];
-
 $routes->map($memberRoutes);
 
 $communityRoutes = [
     //'community/notice' => 'BoardController::notice',
     'community/lists/([a-zA-Z0-9_-]+)' => 'BoardController::lists/$1',
     'community/write/([a-zA-Z0-9_-]+)' => 'BoardController::write/$1',
+    'community/post/([0-9]+)' => 'BoardController::post/$1',
 ];
 $routes->map($communityRoutes);
+
 /*
  * --------------------------------------------------------------------
  * Additional Routing

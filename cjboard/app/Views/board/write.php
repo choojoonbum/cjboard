@@ -1,6 +1,28 @@
 <?= $this->extend('layout') ?>
 <?= $this->section('content') ?>
+<div class="visual subtop_community">
+    <div class="bt">커뮤니티</div>
+    <div class="bottom">
+        <ul class="nav nav-tabs nav-justified">
+            <li class="active"><a href="#">공지사항</a></li>
+            <li><a href="#">뉴스/이벤트/리뷰</a></li>
+            <li><a href="#">사회공헌</a></li>
+        </ul>
+    </div>
+</div>
 <div class="container">
+    <div class="title-area row">
+        <div class="col-md-8 text-left">
+            <h2>공지사항</h2>
+        </div>
+        <div class="col-md-4">
+            <ol class="breadcrumb text-right">
+                <li><a href="#">Home</a></li>
+                <li><a href="#">커뮤니티 </a></li>
+                <li class="active">공지사항</li>
+            </ol>
+        </div>
+    </div>
     <div class="panel panel-primary">
         <div class="panel-heading"><?php echo esc(val('board_name', val('board', $view))); ?> 글쓰기</div>
         <div class="panel-body">
@@ -184,8 +206,8 @@
                     </div>
                 </div>
                 <div class="border_button text-center mt20">
-                    <button type="button" class="btn btn-primary btn-history-back">취소</button>
-                    <button type="submit" class="btn btn-success">작성완료</button>
+                    <button type="button" class="btn btn-danger btn-history-back">취소</button>
+                    <button type="submit" class="btn btn-primary">작성완료</button>
                 </div>
             </div>
             <?php echo form_close(); ?>

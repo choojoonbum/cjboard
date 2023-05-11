@@ -59,6 +59,9 @@ footer .navbar-nav>li>a:focus {
   border-top: 2px solid;
   background-color:#F2F2F0;
 }
+.table > tbody > tr > th {
+  background-color:#F2F2F0;
+}
 .subtop_community {
   background: url(/static/imgs/subtop_community.jpg) center 0 no-repeat;
 }

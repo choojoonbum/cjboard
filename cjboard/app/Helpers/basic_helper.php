@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * Baisc helper
+ *
+ * Copyright (c) CIBoard <www.ciboard.co.kr>
+ *
+ * @author CIBoard (develop@ciboard.co.kr)
+ */
+
 if ( ! function_exists('debug')) {
     function debug($var,$exit = false)
     {
@@ -83,14 +91,8 @@ if ( ! function_exists('post_url')) {
         $key = trim($key, '/');
         $post_id = trim($post_id, '/');
 
-        $post_url = '';
-        if (strtoupper(config_item('uriSegmentPostType')) === 'B') {
-            $post_url = site_url($key . '/' . config_item('uriSegmentPost') . '/' . $post_id);
-        } elseif (strtoupper(config_item('uriSegmentPostType')) === 'C') {
-            $post_url = site_url(config_item('uriSegmentPost') . '/' . $key . '/' . $post_id);
-        } else {
-            $post_url = site_url(config_item('uriSegmentPost') . '/' . $post_id);
-        }
+        $post_url = site_url(service('uri')->getSegment(1).'/'.config_item('uriSegmentPost') . '/' . $post_id);
+
         return $post_url;
     }
 }
@@ -254,4 +256,250 @@ if ( ! function_exists('display_datetime')) {
 
         return $result;
     }
+
+    if ( ! function_exists('display_ipaddress')) {
+        function display_ipaddress($ip = '', $type = '0001')
+        {
+            $len = strlen($type);
+            if ($len !== 4) {
+                return false;
+            }
+            if (empty($ip)) {
+                return false;
+            }
+
+            $regex = '';
+            $regex .= ($type[0] === '1') ? '\\1' : '&#9825;';
+            $regex .= '.';
+            $regex .= ($type[1] === '1') ? '\\2' : '&#9825;';
+            $regex .= '.';
+            $regex .= ($type[2] === '1') ? '\\3' : '&#9825;';
+            $regex .= '.';
+            $regex .= ($type[3] === '1') ? '\\4' : '&#9825;';
+
+            return preg_replace("/([0-9]+).([0-9]+).([0-9]+).([0-9]+)/", $regex, $ip);
+        }
+    }
+    if ( ! function_exists('display_html_content')) {
+        function display_html_content($content = '', $html = '', $thumb_width=700, $autolink = false, $popup = false, $writer_is_admin = false)
+        {
+            $phpversion = phpversion();
+            if (empty($html)) {
+                $content = nl2br(esc($content));
+                if ($autolink) {
+                    $content = url_auto_link($content, $popup);
+                }
+                $content = preg_replace(
+                    "/\[<a\s*href\=\"(http|https|ftp)\:\/\/([^[:space:]]+)\.(gif|png|jpg|jpeg|bmp).*<\/a>(\s\]|\]|)/i",
+                    "<img src=\"$1://$2.$3\" alt=\"\" style=\"max-width:100%;border:0;\">",
+                    $content
+                );
+                if (version_compare($phpversion, '7.2.0') >= 0) {
+
+                } else {
+                    $content = preg_replace_callback(
+                        "/{지도\:([^}]*)}/is",
+                        create_function('$match', '
+						 global $thumb_width;
+						 return get_google_map($match[1], $thumb_width);
+					'),
+                        $content
+                    ); // Google Map
+                }
+
+
+                return $content;
+            }
+
+            $source = array();
+            $target = array();
+
+            $source[] = '//';
+            $target[] = '';
+
+            $source[] = "/<\?xml:namespace prefix = o ns = \"urn:schemas-microsoft-com:office:office\" \/>/";
+            $target[] = '';
+
+            // 테이블 태그의 갯수를 세어 테이블이 깨지지 않도록 한다.
+            $table_begin_count = substr_count(strtolower($content), '<table');
+            $table_end_count = substr_count(strtolower($content), '</table');
+            for ($i = $table_end_count; $i < $table_begin_count; $i++) {
+                $content .= '</table>';
+            }
+
+            $content = preg_replace($source, $target, $content);
+
+            if ($autolink) {
+                $content = url_auto_link($content, $popup);
+            }
+
+            //if ($writer_is_admin === false) {
+            $content = html_purifier($content);
+            //}
+
+            $content = get_view_thumbnail($content, $thumb_width);
+
+            if (version_compare($phpversion, '7.2.0') >= 0) {
+
+            } else {
+                $content = preg_replace_callback(
+                    "/{&#51648;&#46020;\:([^}]*)}/is",
+                    create_function('$match', '
+					 global $thumb_width;
+					 return get_google_map($match[1], $thumb_width);
+				'),
+                    $content
+                ); // Google Map
+            }
+
+            return $content;
+        }
+    }
+    /**
+     * syntax highlight
+     */
+    if ( ! function_exists('content_syntaxhighlighter')) {
+        function content_syntaxhighlighter($m)
+        {
+            $str = $m[3];
+
+            if (empty($str)) {
+                return;
+            }
+
+            $str = str_replace(
+                array("<br>", "<br/>", "<br />", "<div>", "</div>", "<p>", "</p>", "&nbsp;"),
+                "",
+                $str
+            );
+            $target = array("/</", "/>/", "/\"/", "/\'/");
+            $source = array("&lt;", "&gt;", "&#034;", "&#039;");
+
+            $str = preg_replace($target, $source, $str);
+
+            if (empty($str)) {
+                return;
+            }
+
+            $brush = strtolower(trim($m[2]));
+            $brush_arr = array('css', 'js', 'jscript', 'javascript', 'php', 'xml', 'xhtml', 'xslt', 'html');
+            $brush = ($brush && in_array($brush, $brush_arr)) ? $brush : 'html';
+
+            return '<pre class="brush: ' . $brush . ';">' . $str . '</pre>' . PHP_EOL;
+        }
+    }
+
+
+    /**
+     * syntax highlight
+     */
+    if ( ! function_exists('content_syntaxhighlighter_html')) {
+        function content_syntaxhighlighter_html($m)
+        {
+            $str = $m[3];
+
+            if (empty($str)) {
+                return;
+            }
+
+            $str = str_replace(
+                array("\n\r", "\r"),
+                array("\n"),
+                $str
+            );
+            $str = str_replace("\n", "", $str);
+            $str = str_replace(
+                array("<br>", "<br/>", "<br />", "<div>", "</div>", "<p>", "</p>", "&nbsp;"),
+                array("\n", "\n", "\n", "\n", "", "\n", "", "\t"),
+                $str
+            );
+            $target = array("/<span[^>]+>/i", "/<\/span>/i", "/</", "/>/", "/\"/", "/\'/");
+            $source = array("", "", "&lt;", "&gt;", "&#034;", "&#039;");
+
+            $str = preg_replace($target, $source, $str);
+
+            if (empty($str)) {
+                return;
+            }
+
+            $brush = strtolower(trim($m[2]));
+            $brush_arr = array('css', 'js', 'jscript', 'javascript', 'php', 'xml', 'xhtml', 'xslt', 'html');
+            $brush = ($brush && in_array($brush, $brush_arr)) ? $brush : 'html';
+
+            return '<pre class="brush: ' . $brush . ';">' . $str . '</pre>' . PHP_EOL;
+        }
+    }
+    /**
+     * URL 자동 링크 생성
+     */
+    if ( ! function_exists('url_auto_link')) {
+        function url_auto_link($str = '', $popup = false)
+        {
+            if (empty($str)) {
+                return false;
+            }
+            $target = $popup ? 'target="_blank"' : '';
+            $str = str_replace(
+                array("&lt;", "&gt;", "&amp;", "&quot;", "&nbsp;", "&#039;"),
+                array("\t_lt_\t", "\t_gt_\t", "&", "\"", "\t_nbsp_\t", "'"),
+                $str
+            );
+            $str = preg_replace(
+                "/([^(href=\"?'?)|(src=\"?'?)]|\(|^)((http|https|ftp|telnet|news|mms):\/\/[a-zA-Z0-9\.-]+\.[가-힣\xA1-\xFEa-zA-Z0-9\.:&#=_\?\/~\+%@;\-\|\,\(\)]+)/i",
+                "\\1<a href=\"\\2\" {$target}>\\2</A>",
+                $str
+            );
+            $str = preg_replace(
+                "/(^|[\"'\s(])(www\.[^\"'\s()]+)/i",
+                "\\1<a href=\"http://\\2\" {$target}>\\2</A>",
+                $str
+            );
+            $str = preg_replace(
+                "/[0-9a-z_-]+@[a-z0-9._-]{4,}/i",
+                "<a href=\"mailto:\\0\">\\0</a>",
+                $str
+            );
+            $str = str_replace(
+                array("\t_nbsp_\t", "\t_lt_\t", "\t_gt_\t", "'"),
+                array("&nbsp;", "&lt;", "&gt;", "&#039;"),
+                $str
+            );
+            return $str;
+        }
+    }
+    /**
+     * 게시물 작성 페이지 주소를 return 합니다
+     */
+    if ( ! function_exists('write_url')) {
+        function write_url($key = '')
+        {
+            $key = trim($key, '/');
+            return site_url(service('uri')->getSegment(1).'/'.config_item('uriSegmentWrite') . '/' . $key);
+        }
+    }
+
+
+    /**
+     * 게시물 답변 페이지 주소를 return 합니다
+     */
+    if ( ! function_exists('reply_url')) {
+        function reply_url($key = '')
+        {
+            $key = trim($key, '/');
+            return site_url(service('uri')->getSegment(1).'/'.config_item('uriSegmentReply') . '/' . $key);
+        }
+    }
+
+
+    /**
+     * 게시물 수정 페이지 주소를 return 합니다
+     */
+    if ( ! function_exists('modify_url')) {
+        function modify_url($key = '')
+        {
+            $key = trim($key, '/');
+            return site_url(service('uri')->getSegment(1).'/'.config_item('uriSegmentModify') . '/' . $key);
+        }
+    }
+
 }

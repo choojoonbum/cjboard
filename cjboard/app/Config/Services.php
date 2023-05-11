@@ -2,6 +2,7 @@
 
 namespace Config;
 
+use App\Service\AccesslevelService;
 use App\Service\BoardService;
 use App\Service\BoardWriteService;
 use App\Service\MemberService;
@@ -41,5 +42,12 @@ class Services extends BaseService
             return static::getSharedInstance('boardWriteService');
         }
         return new BoardWriteService();
+    }
+
+    public static function accesslevelService($getShared = true) {
+        if ($getShared) {
+            return static::getSharedInstance('accesslevelService');
+        }
+        return new AccesslevelService();
     }
 }

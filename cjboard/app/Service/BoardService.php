@@ -15,6 +15,7 @@ class BoardService {
     private $memberService;
     private $uri;
     private $postModel;
+    private $session;
     
     public function __construct()
     {
@@ -24,6 +25,7 @@ class BoardService {
         $this->uri = service('uri');
         $this->request = service('request');
         $this->postModel = model('PostModel');
+        $this->session = session();
     }
 
     public function itemKey($column = '', $brdKey = '')
@@ -382,8 +384,27 @@ class BoardService {
         }
 
         $return['data'] = $result;
-
         $return['board'] = $board;
+
+        $check = array(
+            'group_id' => val('bgr_id', $board),
+            'board_id' => val('brd_id', $board),
+        );
+        $can_write = service('AccesslevelService')->isAccessable(
+            val('access_write', $board),
+            val('access_write_level', $board),
+            val('access_write_group', $board),
+            $check
+        );
+
+        $return['write_url'] = '';
+        if ($can_write === true) {
+            $return['write_url'] = write_url($brdKey);
+        } elseif (val('always_show_write_button', $board)) {
+            $return['write_url'] = 'javascript:alert(\'비회원은 글쓰기 권한이 없습니다.\\n\\n회원이시라면 로그인 후 이용해 보십시오.\');';
+        }
+
+        $return['list_delete_url'] = site_url('postact/listdelete/' . $brdKey . '?' . $this->uri->getQuery());
 
 
 
@@ -432,6 +453,520 @@ class BoardService {
         $return['page'] = $page;
 
         return $return;
+    }
+
+    public function post($post_id) {
+
+        $view = array();
+        $view['view'] = array();
+
+        $post = $this->postModel->getOne($post_id);
+        $view['view']['post'] = $post;
+
+        $mem_id = (int) $this->memberService->item('mem_id');
+
+        if ( ! val('post_id', $post)) {
+            throw new \Exception('post_id가 존재하지 않음');
+        }
+        if (val('post_del', $post) > 1) {
+            throw new \Exception('삭제된 게시글');
+        }
+
+        $board = $this->item_all(val('brd_id', $post));
+
+        if ( ! val('brd_id', $board)) {
+            show_404();
+        }
+
+        $skeyword = $this->request->getGet('skeyword', null, '');
+
+        $alertmessage = $this->memberService->isMember()
+            ? '회원님은 내용을 볼 수 있는 권한이 없습니다'
+            : '비회원은 내용을 볼 수 있는 권한이 없습니다.\\n\\n회원이시라면 로그인 후 이용해 보십시오';
+
+        $check = array(
+            'group_id' => val('bgr_id', $board),
+            'board_id' => val('brd_id', $board),
+        );
+        //$this->accesslevel->check(
+        //    val('access_view', $board),
+        //    val('access_view_level', $board),
+         //   val('access_view_group', $board),
+         //   $alertmessage,
+         //   $check
+        //);
+
+
+        $view['view']['is_admin'] = $is_admin = $this->memberService->isAdmin(
+            array(
+                'board_id' => val('brd_id', $board),
+                'group_id' => val('bgr_id', $board)
+            )
+        );
+        $view['view']['board_key'] = val('brd_key', $board);
+
+        if (val('use_personal', $board) && $this->memberService->isMember() === false) {
+            throw new \Exception('이 게시판은 1:1 게시판입니다. 비회원은 접근할 수 없습니다');
+        }
+
+
+        if (val('post_secret', $post)) {
+            if (val('mem_id', $post)) {
+                if ($is_admin === false && $mem_id !== abs(val('mem_id', $post))) {
+                    throw new \Exception('비밀글은 본인과 관리자만 확인 가능합니다');
+                }
+            } else {
+                if ($is_admin !== false) {
+                    $this->session->set(
+                        'view_secret_' . val('post_id', $post),
+                        '1'
+                    );
+                }
+                if ( ! $this->session->get('view_secret_' . val('post_id', $post))
+                    && $this->request->getPost('modify_password')) {
+
+                    if ( password_verify($this->request->getPost('modify_password'), val('post_password', $post))) {
+                        $this->session->set(
+                            'view_secret_' . val('post_id', $post),
+                            '1'
+                        );
+                        redirect(current_url());
+                    } else {
+                        $view['view']['message'] = '패스워드가 잘못 입력되었습니다';
+                    }
+                }
+                if ( ! $this->session->get('view_secret_' . val('post_id', $post))) {
+                    return true;
+                }
+            }
+        }
+
+
+        if (val('use_personal', $board) && $is_admin === false
+            && $mem_id !== abs(val('mem_id', $post))) {
+            alert('1:1 게시판은 본인의 글 이외의 열람이 금지되어있습니다.');
+            return false;
+        }
+
+        $this->_stat_count_board(val('brd_id', $board)); // stat_count_board ++
+
+        // 세션 생성
+        if ( ! $this->session->get('post_id_' . $post_id)) {
+            $this->postModel->update_plus($post_id, 'post_hit', 1);
+            $this->session->set(
+                'post_id_' . $post_id,
+                '1'
+            );
+        }
+
+        $use_sideview = val('use_sideview', $board);
+        $use_sideview_icon = val('use_sideview_icon', $board);
+        $view_date_style = val('view_date_style', $board);
+        $view_date_style_manual = val('view_date_style_manual', $board);
+
+        if (val('mem_id', $post) >= 0) {
+            $dbmember = model('memberModel')->getByMemid(val('mem_id', $post), 'mem_icon');
+            $view['view']['post']['display_name'] = display_username(
+                val('post_userid', $post),
+                val('post_nickname', $post),
+                ($use_sideview_icon ? val('mem_icon', $dbmember) : ''),
+                ($use_sideview ? 'Y' : 'N')
+            );
+        } else {
+            $view['view']['post']['display_name'] = '익명사용자';
+        }
+        $view['view']['post']['display_datetime'] = display_datetime(
+            val('post_datetime', $post),
+            $view_date_style,
+            $view_date_style_manual
+        );
+
+        $view['view']['post']['is_mobile'] = (val('post_device', $post) === 'mobile') ? true : false;
+        $view['view']['post']['category'] = '';
+
+        if (val('use_category', $board) && val('post_category', $post)) {
+            $this->load->model('Board_category_model');
+            $view['view']['post']['category'] = $this->Board_category_model
+                ->get_category_info(val('brd_id', $post), val('post_category', $post));
+        }
+
+        $view['view']['post']['display_ip'] = '';
+
+        $show_ip = val('show_ip', $board);
+
+        if ($this->memberService->isAdmin() === 'super' OR $show_ip === '2') {
+            $view['view']['post']['display_ip'] = display_ipaddress(val('post_ip', $post), '1111');
+        } elseif ($show_ip === '1') {
+            $view['view']['post']['display_ip'] = display_ipaddress(val('post_ip', $post), config_item_db('ip_display_style'));
+        }
+        $image_width = val('post_image_width', $board);
+
+        $board['target_blank'] = $target_blank
+            = val('content_target_blank', $board);
+
+        $board['show_url_qrcode'] = val('use_url_qrcode', $board);
+
+        $board['show_attached_url_qrcode'] = val('use_attached_url_qrcode', $board);
+
+        $link_player = '';
+        $view['view']['link'] = $link = array();
+
+        if (val('post_link_count', $post)) {
+            $this->load->model('Post_link_model');
+            $linkwhere = array(
+                'post_id' => $post_id,
+            );
+            $view['view']['link'] = $link = $this->Post_link_model
+                ->get('', '', $linkwhere, '', '', 'pln_id', 'ASC');
+            if ($link && is_array($link)) {
+                foreach ($link as $key => $value) {
+                    $view['view']['link'][$key]['link_link'] = site_url('postact/link/' . val('pln_id', $value));
+                    if (val('use_autoplay', $board)) {
+                        $link_player .= $this->videoplayer->
+                        get_video(prep_url(val('pln_url', $value)));
+                    }
+                }
+            }
+        }
+        $view['view']['link_count'] = $link_count = count($link);
+
+        $file_player = '';
+        if (val('post_file', $post) OR val('post_image', $post)) {
+            $this->load->model('Post_file_model');
+            $filewhere = array(
+                'post_id' => $post_id,
+            );
+            $view['view']['file'] = $file = $this->Post_file_model
+                ->get('', '', $filewhere, '', '', 'pfi_id', 'ASC');
+            $view['view']['file_download'] = array();
+            $view['view']['file_image'] = array();
+
+            $play_extension = array('acc', 'flv', 'f4a', 'f4v', 'mov', 'mp3', 'mp4', 'm4a', 'm4v', 'oga', 'ogg', 'rss', 'webm');
+
+            if ($file && is_array($file)) {
+                foreach ($file as $key => $value) {
+                    if (val('pfi_is_image', $value)) {
+                        $value['origin_image_url'] = site_url(config_item('uploads_dir') . '/post/' . val('pfi_filename', $value));
+                        $value['thumb_image_url'] = thumb_url('post', val('pfi_filename', $value), $image_width);
+                        $view['view']['file_image'][] = $value;
+                    } else {
+                        $value['download_link'] = site_url('postact/download/' . val('pfi_id', $value));
+                        $view['view']['file_download'][] = $value;
+                        if (val('use_autoplay', $board) && in_array(val('pfi_type', $value), $play_extension)) {
+                            $file_player .= $this->videoplayer->get_jwplayer(site_url(config_item('uploads_dir') . '/post/' . val('pfi_filename', $value)), $image_width);
+                        }
+                    }
+                }
+            }
+            $view['view']['file_count'] = count($file);
+            $view['view']['file_download_count'] = count($view['view']['file_download']);
+            $view['view']['file_image_count'] = count($view['view']['file_image']);
+        }
+
+        $autourl = val('use_auto_url', $board);
+
+        $autolink = $autourl ? true : false;
+        $popup = $target_blank ? true : false;
+
+        $view['view']['post']['content'] = '';
+
+        if (val('post_del', $post)) {
+
+            $view['view']['post']['post_title'] = '게시물이 삭제되었습니다';
+            $view['view']['post']['content'] = '<div class="alert alert-danger">이 게시물은 '
+                . html_escape(val('delete_mem_nickname', val('meta', $post)))
+                . '님에 의해 '
+                . html_escape(val('delete_datetime', val('meta', $post)))
+                . ' 에 삭제 되었습니다</div>';
+
+        } else {
+            $is_blind = (val('blame_blind_count', $board) > 0 && val('post_blame', $post) >= val('blame_blind_count', $board)) ? true : false;
+            if ($is_blind === true) {
+                $view['view']['post']['content'] .= '<div class="alert alert-danger">신고가 접수된 게시글입니다. 본인과 관리자만 확인이 가능합니다</div>';
+            }
+
+            if ($is_blind === false OR $is_admin !== false
+                OR (val('mem_id', $post) && abs(val('mem_id', $post)) === $mem_id)) {
+                $view['view']['post']['content'] .= $file_player . $link_player
+                    . display_html_content(
+                        val('post_content', $post),
+                        val('post_html', $post),
+                        $image_width,
+                        $autolink,
+                        $popup
+                    );
+
+                if (val('syntax_highlighter', $board)) {
+                    if (val('post_html', $post)) {
+                        $view['view']['post']['content'] = preg_replace_callback(
+                            "/(\[code\]|\[code=(.*)\])(.*)\[\/code\]/iUs",
+                            "content_syntaxhighlighter_html",
+                            $view['view']['post']['content']
+                        ); // SyntaxHighlighter
+                    } else {
+                        $view['view']['post']['content'] = preg_replace_callback(
+                            "/(\[code\]|\[code=(.*)\])(.*)\[\/code\]/iUs",
+                            "content_syntaxhighlighter",
+                            $view['view']['post']['content']
+                        ); // SyntaxHighlighter
+                    }
+                }
+            }
+
+            $view['view']['tag'] = '';
+            if (val('use_post_tag', $board)) {
+
+                $tagwhere = array(
+                    'post_id' => $post_id,
+                );
+                $view['view']['post']['tag'] = $tag = model('PostTagModel')->get('', '', $tagwhere, '', '', 'pta_id', 'ASC');
+            }
+
+            $extravars = val('extravars', $board);
+            $form = json_decode($extravars, true);
+            $extra_content = '';
+            $k = 0;
+            if ($form && is_array($form)) {
+                foreach ($form as $key => $value) {
+                    if ( ! val('use', $value)) {
+                        continue;
+                    }
+
+                    $item = val(val('field_name', $value), val('extravars', $post));
+                    $extra_content[$k]['field_name'] = val('field_name', $value);
+                    $extra_content[$k]['display_name'] = val('display_name', $value);
+                    if (val('field_type', $value) === 'checkbox') {
+                        $tmp_value = json_decode($item);
+                        $tmp = '';
+                        if ($tmp_value) {
+                            foreach ($tmp_value as $val) {
+                                if ($tmp) {
+                                    $tmp .= ', ';
+                                }
+                                $tmp .= $val;
+                            }
+                        }
+                        $item = $tmp;
+                    }
+                    $extra_content[$k]['output'] = $item;
+                    $k++;
+                }
+            }
+
+            $view['view']['extra_content'] = $extra_content;
+        }
+        $show_list_from_view = val('show_list_from_view', $board);
+
+        $board['headercontent'] = val('header_content', $board);
+
+        if (empty($show_list_from_view)) {
+            $board['footercontent'] = val('footer_content', $board);
+        }
+
+
+        $view['view']['post_url'] = $post_url = post_url(val('brd_key', $board), $post_id);
+
+        $view['view']['board'] = $board;
+
+
+        $view['view']['comment']['is_cmt_name'] = $is_cmt_name
+            = ($this->memberService->isMember() === false) ? true : false;
+
+        $view['view']['comment']['use_emoticon']
+            = val('use_comment_emoticon', $board);
+
+        $view['view']['comment']['use_specialchars']
+            = val('use_comment_specialchars', $board);
+
+        $view['view']['comment']['show_textarea']
+            = val('always_show_comment_textarea', $board);
+
+        $check = array(
+            'group_id' => val('bgr_id', $board),
+            'board_id' => val('brd_id', $board)
+        );
+        /*
+        $can_write = $this->accesslevel->is_accessable(
+            val('access_write', $board),
+            val('access_write_level', $board),
+            val('access_write_group', $board),
+            $check
+        );
+        $can_comment_write = $this->accesslevel->is_accessable(
+            val('access_comment', $board),
+            val('access_comment_level', $board),
+            val('access_comment_group', $board),
+            $check
+        );
+        */
+        $can_comment_write = $can_write = $can_reply = false;
+
+        $can_comment_write_message = '';
+        if ($can_comment_write === false) {
+            $can_comment_write_message = '비회원은 댓글쓰기 권한이 없습니다. 회원이시라면 로그인후 이용해보십시오';
+        }
+        //$can_reply = $this->accesslevel->is_accessable(
+        //    val('access_reply', $board),
+        //    val('access_reply_level', $board),
+       //     val('access_reply_group', $board),
+       //     $check
+       // );
+
+
+        $can_modify = ($is_admin !== false OR ! val('mem_id', $post)
+            OR (val('mem_id', $post) && $mem_id === abs(val('mem_id', $post)))) ? true : false;
+        $can_delete = ($is_admin !== false OR ! val('mem_id', $post)
+            OR (val('mem_id', $post) && $mem_id === abs(val('mem_id', $post)))) ? true : false;
+
+        $view['view']['write_url'] = '';
+        if ($can_write === true) {
+            $view['view']['write_url'] = write_url(val('brd_key', $board));
+        } elseif (val('always_show_write_button', $board)) {
+            $view['view']['write_url'] = 'javascript:alert(\'비회원은 글쓰기 권한이 없습니다.\\n\\n회원이시라면 로그인 후 이용해 보십시오.\');';
+        } elseif (val('mobile_always_show_write_button', $board)) {
+            $view['view']['write_url'] = 'javascript:alert(\'비회원은 글쓰기 권한이 없습니다.\\n\\n회원이시라면 로그인 후 이용해 보십시오.\');';
+        }
+
+        $view['view']['reply_url'] = ($can_reply === true && ! val('post_del', $post))
+            ? reply_url(val('post_id', $post)) : '';
+        $view['view']['modify_url'] = ($can_modify && ! val('post_del', $post))
+            ? modify_url(val('post_id', $post) . '?' . $this->uri->getQuery()) : '';
+        $view['view']['delete_url'] = ($can_delete && ! val('post_del', $post))
+            ? site_url('postact/delete/' . val('post_id', $post) . '?' . $this->uri->getQuery()) : '';
+
+        if ($skeyword) {
+            $view['view']['list_url'] = board_url(val('brd_key', $board));
+            $view['view']['search_list_url'] = board_url(val('brd_key', $board) . '?' . $this->uri->getQuery());
+        } else {
+            $view['view']['list_url'] = board_url(val('brd_key', $board) . '?' . $this->uri->getQuery());
+            $view['view']['search_list_url'] = '';
+        }
+        $view['view']['trash_url'] = site_url('boards/trash/' . val('post_id', $post) . '?' . $this->uri->getQuery());
+
+        if (val('notice_comment_block', $board) && val('post_notice', $post)) {
+            $can_comment_write = false;
+            $can_comment_write_message = '공지사항 글에는 댓글 입력이 제한되어 있습니다.';
+        }
+        if (val('post_del', $post)) {
+            $can_comment_write = false;
+            $can_comment_write_message = '삭제된 글에는 댓글 입력이 제한되어 있습니다.';
+        }
+
+
+        $highlight_keyword = '';
+        if ($skeyword) {
+            $key_explode = explode(' ', $skeyword);
+            if ($key_explode) {
+                foreach ($key_explode as $seval) {
+                    if ($highlight_keyword) {
+                        $highlight_keyword .= ',';
+                    }
+                    $highlight_keyword .= '\'' . html_escape($seval) . '\'';
+                }
+            }
+        }
+        $view['view']['highlight_keyword'] = $highlight_keyword;
+
+        $view['view']['next_post'] = '';
+        $view['view']['prev_post'] = '';
+        $use_prev_next = false;
+
+        if (val('use_prev_next_post', $board)) {
+            $use_prev_next = true;
+        }
+        if (val('use_mobile_prev_next_post', $board)) {
+            $use_prev_next = true;
+        }
+        if ($use_prev_next) {
+            $where = array();
+            $where['brd_id'] = val('brd_id', $post);
+
+            $where['post_del <>'] =2;
+            $where['post_secret'] = 0;
+            if (val('except_notice', $board)) {
+                $where['post_notice'] = 0;
+            }
+            if (val('mobile_except_notice', $board)) {
+                $where['post_notice'] = 0;
+            }
+            if (val('use_personal', $board) && $is_admin === false) {
+                $where['post.mem_id'] = $mem_id;
+            }
+            $sfield = $sfieldchk = $this->request->getGet('sfield', null, '');
+            if ($sfield === 'post_both') {
+                $sfield = array('post_title', 'post_content');
+            }
+            $skeyword = $this->request->getGet('skeyword', null, '');
+
+            $view['view']['next_post'] = $next_post = $this->postModel->get_prev_next_post(
+                    val('post_id', $post),
+                    val('post_num', $post),
+                    'next',
+                    $where,
+                    $sfield,
+                    $skeyword
+                );
+
+            if (val('post_id', $next_post)) {
+                $view['view']['next_post']['url'] = post_url(val('brd_key', $board), val('post_id', $next_post)) . '?' . $this->uri->getQuery();
+            }
+
+            $view['view']['prev_post'] = $prev_post = $this->postModel->get_prev_next_post(
+                    val('post_id', $post),
+                    val('post_num', $post),
+                    'prev',
+                    $where,
+                    $sfield,
+                    $skeyword
+                );
+
+            if (val('post_id', $prev_post)) {
+                $view['view']['prev_post']['url'] = post_url(val('brd_key', $board), val('post_id', $prev_post)) . '?' . $this->uri->getQuery();
+            }
+        }
+
+        $view['view']['comment']['can_comment_write'] = $can_comment_write;
+        $view['view']['comment']['can_comment_write_message']
+            = $can_comment_write_message;
+        $view['view']['comment']['can_comment_view'] = true;
+
+        $view['view']['comment']['is_comment_name']
+            = ($this->memberService->isMember() === false) ? true : false;
+        $view['view']['comment']['can_comment_secret']
+            = (val('use_comment_secret', $board) === '1' && $this->memberService->isMember())
+            ? true : false;
+        $view['view']['comment']['cmt_secret']
+            = val('use_comment_secret_selected', $board) ? '1' : '';
+
+        $password_length = config_item_db('password_length');
+        $view['view']['comment']['password_length'] = $password_length;
+        $view['view']['comment']['cmt_content']
+            = val('comment_default_content', $board);
+
+        if ($show_list_from_view) {
+            $view['view']['list'] = $list = $this->_get_list(val('brd_key', $board), 1);
+        }
+
+        return $view;
+    }
+
+    public function _stat_count_board($brd_id = 0)
+    {
+        if (empty($brd_id)) {
+            return false;
+        }
+
+        helper('cookie');
+        // 방문자 기록
+        if ( ! get_cookie('board_id_' . $brd_id)) {
+            $cookie_name = 'board_id_' . $brd_id;
+            $cookie_value = '1';
+            $cookie_expire = 86400; // 1일간 저장
+            set_cookie($cookie_name, $cookie_value, $cookie_expire);
+
+            model('StatCountBoardModel')->add_visit_board($brd_id);
+
+        }
     }
 
 }

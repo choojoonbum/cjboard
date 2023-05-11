@@ -10,6 +10,7 @@ class MemberService {
     private $member;
     private $validation;
     private $request;
+    private $memberGroup;
 
     public function __construct() {
         $this->session = session();
@@ -42,6 +43,17 @@ class MemberService {
         return false;
     }
 
+    public function group()
+    {
+        if (empty($this->memberGroup)) {
+            $where = array(
+                'mem_id' => $this->item('mem_id'),
+            );
+            $this->memberGroup = model('MemberGroupMemberModel')->get('', '', $where, '', 0, 'mgm_id', 'ASC');
+        }
+        return $this->memberGroup;
+    }
+    
     public function item($column = '')
     {
         if (empty($column)) {
