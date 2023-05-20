@@ -33,19 +33,45 @@
                 <tr>
                     <td colspan="2" class="text-left">작성자 : <?= val('display_name', val('post', $view)); ?>  작성일 : <?= val('display_datetime', val('post', $view)); ?>   조회수 : <?= number_format(val('post_hit', val('post', $view))); ?></td>
                 </tr>
+                <?php
+                if (val('link_count', $view) > 0) {
+                    foreach (val('link', $view) as $key => $value) {
+                        ?>
+                        <tr>
+                            <td colspan="2" class="text-left"><i class="fa fa-link"></i> <a href="<?php echo val('link_link', $value); ?>" target="_blank"><?php echo esc(val('pln_url', $value)); ?></a><span class="badge"><?php echo number_format(val('pln_hit', $value)); ?></span>
+                                <?php if (val('show_url_qrcode', val('board', $view))) { ?>
+                                    <span class="url-qrcode" data-qrcode-url="<?php echo urlencode(val('pln_url', $value)); ?>"><i class="fa fa-qrcode"></i></span>
+                                <?php } ?>
+                            </td>
+                        </tr>
+                        <?php
+                    }
+                }
+                ?>
                 <tr>
                     <td colspan="2">
-                        <div>
+                        <div class="contents-view-img">
+                            <?php
+                            if (val('file_image', $view)) {
+                                foreach (val('file_image', $view) as $key => $value) {
+                                    ?>
+                                    <img src="/imageRender<?php echo val('origin_image_url', $value); ?>" alt="<?php echo esc(val('pfi_originname', $value)); ?>" title="<?php echo esc(val('pfi_originname', $value)); ?>" class="view_full_image" data-origin-image-url="<?php echo val('origin_image_url', $value); ?>" style="max-width:100%;" />
+                                    <?php
+                                }
+                            }
+                            ?>
+                        </div>
+                        <div class="text-left">
                             <?= val('content', val('post', $view)); ?>
                         </div>
                     </td>
                 </tr>
                 <tr>
-                    <th class="text-center">이전글</th>
+                    <th class="text-center px150">이전글</th>
                     <td class="text-left"><a href="<?= val('url', val('prev_post', $view)); ?>"><?= val('post_title', val('prev_post', $view)); ?></a></td>
                 </tr>
                 <tr>
-                    <th class="text-center">다음글</th>
+                    <th class="text-center px150">다음글</th>
                     <td class="text-left"><a href="<?= val('url', val('next_post', $view)); ?>"><?= val('post_title', val('next_post', $view)); ?></a></td>
                 </tr>
             </tbody>

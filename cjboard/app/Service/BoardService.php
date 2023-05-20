@@ -612,19 +612,14 @@ class BoardService {
         $view['view']['link'] = $link = array();
 
         if (val('post_link_count', $post)) {
-            $this->load->model('Post_link_model');
+            ;
             $linkwhere = array(
                 'post_id' => $post_id,
             );
-            $view['view']['link'] = $link = $this->Post_link_model
-                ->get('', '', $linkwhere, '', '', 'pln_id', 'ASC');
+            $view['view']['link'] = $link = model('PostLinkModel')->get('', '', $linkwhere, '', '', 'pln_id', 'ASC');
             if ($link && is_array($link)) {
                 foreach ($link as $key => $value) {
                     $view['view']['link'][$key]['link_link'] = site_url('postact/link/' . val('pln_id', $value));
-                    if (val('use_autoplay', $board)) {
-                        $link_player .= $this->videoplayer->
-                        get_video(prep_url(val('pln_url', $value)));
-                    }
                 }
             }
         }
@@ -632,12 +627,10 @@ class BoardService {
 
         $file_player = '';
         if (val('post_file', $post) OR val('post_image', $post)) {
-            $this->load->model('Post_file_model');
             $filewhere = array(
                 'post_id' => $post_id,
             );
-            $view['view']['file'] = $file = $this->Post_file_model
-                ->get('', '', $filewhere, '', '', 'pfi_id', 'ASC');
+            $view['view']['file'] = $file = model('postFileModel')->get('', '', $filewhere, '', '', 'pfi_id', 'ASC');
             $view['view']['file_download'] = array();
             $view['view']['file_image'] = array();
 
@@ -646,14 +639,14 @@ class BoardService {
             if ($file && is_array($file)) {
                 foreach ($file as $key => $value) {
                     if (val('pfi_is_image', $value)) {
-                        $value['origin_image_url'] = site_url(config_item('uploads_dir') . '/post/' . val('pfi_filename', $value));
-                        $value['thumb_image_url'] = thumb_url('post', val('pfi_filename', $value), $image_width);
+                        $value['origin_image_url'] = '/post/' . val('pfi_filename', $value);
+                        //$value['thumb_image_url'] = thumb_url('post', val('pfi_filename', $value), $image_width);
                         $view['view']['file_image'][] = $value;
                     } else {
                         $value['download_link'] = site_url('postact/download/' . val('pfi_id', $value));
                         $view['view']['file_download'][] = $value;
                         if (val('use_autoplay', $board) && in_array(val('pfi_type', $value), $play_extension)) {
-                            $file_player .= $this->videoplayer->get_jwplayer(site_url(config_item('uploads_dir') . '/post/' . val('pfi_filename', $value)), $image_width);
+                            $file_player .= $this->videoplayer->get_jwplayer(site_url(config_item('uploadsDir') . '/post/' . val('pfi_filename', $value)), $image_width);
                         }
                     }
                 }

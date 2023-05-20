@@ -19,4 +19,6 @@ class Config extends BaseConfig
     public string $uriSegmentPostType = 'A';
     public string $uriSegmentCmallItem = 'item';
 
+    public string $uploadsDir = 'post';
+
 }

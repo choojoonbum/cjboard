@@ -36,6 +36,8 @@ $routes->group('captcha', static function ($routes) {
     $routes->get('get', 'CaptchaController::getCaptcha');
 });
 
+$routes->get('imageRender/(:any)', 'RenderImage::index/$1');
+
 $memberRoutes = [
     'member/agreement' => 'MemberController::agreement',
     'member/register' => 'MemberController::register',

@@ -41,7 +41,7 @@
                     <tr>
                         <?php if (val('is_admin', $view)) { ?><th scope="row"><input type="checkbox" name="chk_post_id[]" value="<?php echo val('post_id', $result); ?>" /></th><?php } ?>
                         <td><?php echo val('num', $result); ?></td>
-                        <td>
+                        <td class="text-left">
                             <?php if (val('category', $result)) { ?><a href="<?php echo board_url(val('brd_key', val('board', val('list', $view)))); ?>?category_id=<?php echo esc(val('bca_key', val('category', $result))); ?>"><span class="label label-default"><?php echo esc(val('bca_value', val('category', $result))); ?></span></a><?php } ?>
                             <?php if (val('post_reply', $result)) { ?><span class="label label-primary" style="margin-left:<?php echo strlen(val('post_reply', $result)) * 10; ?>px">Re</span><?php } ?>
                             <a href="<?php echo val('post_url', $result); ?>" style="
@@ -83,12 +83,12 @@
 
             </tbody>
         </table>
-        <?php if (val('write_url', val('list', $view))) { ?>
-            <div class="pull-right">
-                <a href="<?php echo val('write_url', val('list', $view)); ?>" class="btn btn-primary">글쓰기</a>
-            </div>
-        <?php } ?>
         <nav><?php echo val('paging', val('list', $view)); ?></nav>
+        <?php if (val('write_url', val('list', $view))) { ?>
+        <div class="pull-right">
+            <a href="<?php echo val('write_url', val('list', $view)); ?>" class="btn btn-primary">글쓰기</a>
+        </div>
+        <?php } ?>
     </div>
 
 <?= $this->endSection() ?>

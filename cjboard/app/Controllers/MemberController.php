@@ -210,7 +210,7 @@ class MemberController extends BaseController
                 foreach ($uploadImgs as $uploadImg) {
                     if (isset($_FILES) && isset($_FILES[$uploadImg]) && isset($_FILES[$uploadImg]['name']) && $_FILES[$uploadImg]['name'] && $img = $this->request->getFile($uploadImg)) {
                         $validationRule = [
-                            'mem_photo' => [
+                            $uploadImg => [
                                 'rules' => 'uploaded['.$uploadImg.']'
                                     . '|is_image['.$uploadImg.']'
                                     . '|mime_in['.$uploadImg.',image/jpg,image/jpeg,image/gif,image/png,image/webp]'

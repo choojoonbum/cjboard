@@ -8,6 +8,7 @@ class BoardWriteService {
     private $memberService;
     private $validation;
     private $request;
+    public  $postFileModel;
 
     public function __construct()
     {
@@ -16,6 +17,7 @@ class BoardWriteService {
         $this->memberService = service('memberService');
         $this->validation = service('validation');
         $this->request = service('request');
+        $this->postFileModel = model('postFileModel');
     }
 
     public function _write_common($board, $origin = '', $reply = '')
@@ -138,9 +140,9 @@ class BoardWriteService {
             );
         }
 
-        //$config['captcha_key'] = array(
-        ///    'rules' => 'required|valid_captcha',
-        //);
+        $config['captcha_key'] = array(
+            'rules' => 'required|valid_captcha',
+        );
 
         if ($use_subj_style) {
             $config['post_title_color'] = array(
@@ -159,36 +161,81 @@ class BoardWriteService {
         $this->validation->setRules($config);
         $form_validation = $this->validation->withRequest($this->request)->run();
 
-        $file_error = '';
-        $uploadfiledata = array();
+        if (val('use_upload_file', $board)) {
+            $check = array(
+                'group_id' => val('bgr_id', $board),
+                'board_id' => val('brd_id', $board),
+            );
+            $use_upload = service('AccesslevelService')->isAccessable(
+                val('access_upload', $board),
+                val('access_upload_level', $board),
+                val('access_upload_group', $board),
+                $check
+            );
+        } else {
+            $use_upload = false;
+        }
 
-        $use_upload = false;
-        $use_dhtml = false;
-        $view['view']['board']['use_dhtml'] = $use_dhtml;
+        $view['view']['board']['use_upload'] = $use_upload;
+        $view['view']['board']['upload_file_count'] = val('upload_file_num', $board);
 
-        $use_subject_style = false;
-        $view['view']['board']['use_subject_style'] = $use_subject_style;
-
-        $can_poll_write = false;
-        $view['view']['board']['can_poll_write'] = $can_poll_write;
-
-        $can_tag_write = false;
+        if (val('use_post_tag', $board)) {
+            $check = array(
+                'group_id' => val('bgr_id', $board),
+                'board_id' => val('brd_id', $board),
+            );
+            $can_tag_write = $this->accesslevel->is_accessable(
+                val('access_tag_write', $board),
+                val('access_tag_write_level', $board),
+                val('access_tag_write_group', $board),
+                $check
+            );
+        } else {
+            $can_tag_write = false;
+        }
         $view['view']['board']['can_tag_write'] = $can_tag_write;
 
-        $view['view']['board']['link_count']
-            = val('link_num', $board);
+        $view['view']['board']['link_count'] = val('link_num', $board);
 
-        $view['view']['board']['use_emoticon']
-            = val('use_post_emoticon', $board);
+        $file_error = '';
+        $uploadfiledata = array();
+        $uploadfiledata2 = array();
+        if ($use_upload === true && $form_validation && val('use_upload_file', $board)) {
+            $upload_path = '/'.config_item('uploadsDir').'/'.date("Ymd");
+            for ( $i=0; $i<2; $i++ ){
+                $img = $this->request->getFile('post_file.'.$i);
+                if ($img->isValid()) {
+                    $validationRule = [
+                        'post_file.'.$i => [
+                            'rules' => 'uploaded[post_file.'.$i.']'
+                                . '|is_image[post_file.'.$i.']'
+                                . '|mime_in['.'post_file.'.$i.',image/jpg,image/jpeg,image/gif,image/png,image/webp]'
+                                . '|max_size['.'post_file.'.$i.',2000]'
+                                . '|max_dims['.'post_file.'.$i.',1000,1000]',
+                        ],
+                    ];
+                    $this->validation->setRules($validationRule);
+                    if (! $this->validation->withRequest($this->request)->run()) {
+                        $file_error = $this->validation->getErrors();
+                        break;
+                    } else {
+                        if (! $img->hasMoved()) {
+                            $newName = $img->getRandomName();
+                            $img->move(WRITEPATH . 'uploads'.$upload_path, $newName);
 
-        $view['view']['board']['use_specialchars']
-            = val('use_post_specialchars', $board);
-
-        $view['view']['board']['headercontent']
-            = val('header_content', $board);
-
-        $view['view']['board']['footercontent']
-            = val('footer_content', $board);
+                            $uploadfiledata[$i] = array();
+                            $uploadfiledata[$i]['pfi_filename'] = date("Ymd") . '/' . $newName;
+                            $uploadfiledata[$i]['pfi_originname'] = $img->getName();
+                            $uploadfiledata[$i]['pfi_filesize'] = $img->getSizeByUnit('kb');
+                            $uploadfiledata[$i]['pfi_width'] = 0;
+                            $uploadfiledata[$i]['pfi_height'] = 0;
+                            //$uploadfiledata[$i]['pfi_type'] = $img->guessExtension();
+                            $uploadfiledata[$i]['is_image'] = 1;
+                        }
+                    }
+                }
+            }
+        }
 
         $view['valid'] = true;
         if ($form_validation === false OR $file_error) {
@@ -290,7 +337,7 @@ class BoardWriteService {
 
         } else {
 
-            $content_type = $use_dhtml ? 1 : 0;
+            $content_type = 0;
 
             if ($origin) {
                 $post_num = val('post_num', $origin);
@@ -354,14 +401,7 @@ class BoardWriteService {
             if (val('use_post_secret', $board) === '2') {
                 $updatedata['post_secret'] = 1;
             }
-            if ($can_post_receive_email) {
-                $updatedata['post_receive_email'] = $this->request->getPost('post_receive_email') ? 1 : 0;
-            }
-            if ($use_subject_style) {
-                $metadata['post_title_color'] = $this->request->getPost('post_title_color');
-                $metadata['post_title_font'] = $this->request->getPost('post_title_font');
-                $metadata['post_title_bold'] = $this->request->getPost('post_title_bold');
-            }
+
             if (val('use_category', $board)) {
                 $updatedata['post_category'] = $this->request->getPost('post_category');
             }
@@ -423,7 +463,7 @@ class BoardWriteService {
                     'phi_content' => $post_content,
                     'phi_content_html_type' => $content_type,
                     'phi_ip' => $this->request->getIPAddress(),
-                    'phi_datetime' => cdate('Y-m-d H:i:s'),
+                    'phi_datetime' => date('Y-m-d H:i:s'),
                 );
                 $this->Post_history_model->insert($historydata);
             }
@@ -437,18 +477,16 @@ class BoardWriteService {
                             'brd_id' => val('brd_id', $board),
                             'pln_url' => prep_url($pval),
                         );
-                        $this->Post_link_model->insert($linkupdate);
+                        model('PostLinkModel')->insert($linkupdate);
                         $post_link_update_chk = true;
                     }
                 }
                 $postupdate = array(
                     'post_link_count' => count($post_link),
                 );
-                if ($post_link_update_chk) $this->Post_model->update($post_id, $postupdate);
+                if ($post_link_update_chk) $this->postModel->update($post_id, $postupdate);
             }
 
-
-            $file_updated = false;
             if ($use_upload && $uploadfiledata
                 && is_array($uploadfiledata) && count($uploadfiledata) > 0) {
                 foreach ($uploadfiledata as $pkey => $pval) {
@@ -460,20 +498,19 @@ class BoardWriteService {
                             'pfi_originname' => val('pfi_originname', $pval),
                             'pfi_filename' => val('pfi_filename', $pval),
                             'pfi_filesize' => val('pfi_filesize', $pval),
-                            'pfi_width' => val('pfi_width', $pval),
-                            'pfi_height' => val('pfi_height', $pval),
-                            'pfi_type' => val('pfi_type', $pval),
+                            //'pfi_width' => val('pfi_width', $pval),
+                            //'pfi_height' => val('pfi_height', $pval),
+                            //'pfi_type' => val('pfi_type', $pval),
                             'pfi_is_image' => val('is_image', $pval),
-                            'pfi_datetime' => cdate('Y-m-d H:i:s'),
-                            'pfi_ip' => $this->request->ip_address(),
+                            'pfi_datetime' => date('Y-m-d H:i:s'),
+                            'pfi_ip' => $this->request->getIPAddress(),
                         );
-                        $file_id = $this->Post_file_model->insert($fileupdate);
+                        $file_id = $this->postFileModel->insert($fileupdate);
                         $file_updated = true;
                     }
                 }
             }
-            //$result = $this->Post_file_model->get_post_file_count($post_id);
-            $result = false;
+            $result = $this->postFileModel->get_post_file_count($post_id);
             $postupdatedata = array();
             if ($result && is_array($result)) {
                 foreach ($result as $value) {
@@ -483,7 +520,8 @@ class BoardWriteService {
                         $postupdatedata['post_file'] = val('cnt', $value);
                     }
                 }
-                $this->Post_model->update($post_id, $postupdatedata);
+
+                $this->postModel->update($post_id, $postupdatedata);
             }
 
             if (val('use_post_tag', $board) && $can_tag_write) {
@@ -524,7 +562,6 @@ class BoardWriteService {
              */
             $redirecturl = post_url(val('brd_key', $board), $post_id);
             $view['redirecturl'] = $redirecturl;
-            $view['redirecturl'] = 'community/notice';
         }
 
 

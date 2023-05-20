@@ -40,13 +40,13 @@ class BoardController extends BaseController
     {
 
         if (empty($brdKey)) {
-            //오류 익셉션 추가하기
+            alert('brdKey 존재하지 않음');
             return;
         }
 
         $board_id = $this->boardService->itemKey('brd_id', $brdKey);
         if (empty($board_id)) {
-            //오류 익셉션 추가하기
+            alert('board_id 존재하지 않음');
             return;
         }
         $board = $this->boardService->itemAll($board_id);
@@ -65,17 +65,16 @@ class BoardController extends BaseController
             'group_id' => val('bgr_id', $board),
             'board_id' => val('brd_id', $board),
         );
-        /*
-        $this->accesslevel->check(
+
+        service('AccesslevelService')->check(
             val('access_write', $board),
             val('access_write_level', $board),
             val('access_write_group', $board),
             $alertmessage,
             $check
         );
-*/
+
         $view = $this->boardWriteService->_write_common($board);
-        helper('dhtml_editor');
 
         if (! $view['valid']){
             return view('board/write',$view);
@@ -83,7 +82,7 @@ class BoardController extends BaseController
             if(! $view['redirecturl']) {
                 return view('board/write',$view);
             } else {
-                return redirect($view['redirecturl']);
+                return redirect()->to($view['redirecturl']);
             }
         }
     }

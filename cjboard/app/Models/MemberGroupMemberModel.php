@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use CodeIgniter\Model;
-
 class MemberGroupMemberModel extends BaseModel
 {
     protected $table      = 'member_group_member';

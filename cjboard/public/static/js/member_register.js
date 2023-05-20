@@ -93,21 +93,3 @@
 		});
 		return response;
 	}, '이 닉네임은 사용하실 수 없습니다');
-
-	var captcha_word = '';
-
-	$(function() {
-		$.ajax({
-			url : cb_url + '/captcha/get',
-			type : 'get',
-			dataType : 'json',
-			success : function(data) {
-				captcha_word= data.word;
-			}
-		});
-		$.validator.addMethod('captchaKey', function(value, element) {
-			console.log(captcha_word)
-			return this.optional(element) || value.toLowerCase() === captcha_word.toLowerCase();
-		});
-	});
-

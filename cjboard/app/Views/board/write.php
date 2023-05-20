@@ -76,7 +76,7 @@
                 <?php } ?>
                 <div class="form-group <?php if (val('post_title', $errors)) { ?>has-error<?php } ?>">
                     <label for="post_title" class="col-md-2 control-label">제목</label>
-                    <div class="col-md-10" style="display:table;">
+                    <div class="col-md-10">
                         <input type="text" class="form-control" name="post_title" id="post_title" value="<?php echo set_value('post_title', val('post_title', val('post', $view))); ?>" />
                         <?php if (val('captcha_key', $errors)) { ?>
                             <div class="text-danger text-left"><?= val('post_title', $errors) ?></div>
@@ -125,29 +125,15 @@
                         </div>
                     </div>
                 <?php } ?>
-
-                <div class="form-group">
-                    <div class="col-sm-12">
-                        <?php if ( ! val('use_dhtml', val('board', $view))) { ?>
-                            <div>
-                                <div class="btn-group pull-right mb10">
-                                    <?php if (val('use_emoticon', val('board', $view))) { ?>
-                                        <button type="button" class="btn btn-default btn-sm" onclick="window.open('<?php echo site_url('helptool/emoticon?id=post_content'); ?>', 'emoticon', 'width=600,height=400,scrollbars=yes')"><i class="fa fa-smile-o fa-lg"></i></button>
-                                    <?php } ?>
-                                    <?php if (val('use_specialchars', val('board', $view))) { ?>
-                                        <button type="button" class="btn btn-default btn-sm" onclick="window.open('<?php echo site_url('helptool/specialchars?id=post_content'); ?>', 'specialchars', 'width=490,height=245,scrollbars=yes')"><i class="fa fa-star-o fa-lg"></i></button>
-                                    <?php } ?>
-                                    <button type="button" class="btn btn-default btn-sm" onClick="resize_textarea('post_content', 'down');"><i class="fa fa-plus fa-lg"></i></button>
-                                    <button type="button" class="btn btn-default btn-sm" onClick="resize_textarea('post_content', 'up');"><i class="fa fa-minus fa-lg"></i></button>
-                                </div>
-                            </div>
+                <div class="form-group <?php if (val('post_content', $errors)) { ?>has-error<?php } ?>">
+                    <label for="post_title" class="col-md-2 control-label">내용</label>
+                    <div class="col-md-10">
+                        <textarea id="post_content" name="post_content" class="form-control" rows="5"><?=set_value('post_content', val('post_content', val('post', $view)))?></textarea>
+                        <?php if (val('post_content', $errors)) { ?>
+                            <div class="text-danger text-left"><?= val('post_content', $errors) ?></div>
                         <?php } ?>
-
-                        <?php echo display_dhtml_editor('post_content', set_value('post_content', val('post_content', val('post', $view))), $classname = 'form-control dhtmleditor', $is_dhtml_editor = val('use_dhtml', val('board', $view)), $editor_type = config_item_db('post_editor_type')); ?>
-
                     </div>
                 </div>
-
                 <?php
                 if (val('link_count', val('board', $view)) > 0) {
                     $link_count = val('link_count', val('board', $view));
@@ -214,4 +200,31 @@
         </div>
     </div>
 </div>
+<script type="text/javascript" src="<?= base_url('static/js/captcha.js') ?>"></script>
+<script type="text/javascript">
+
+$(function() {
+    $('#fwrite').validate({
+        rules: {
+            post_title: {required :true, minlength:2, maxlength:60},
+            post_content : { 'required':true}
+    <?php if (val('is_post_name', val('post', $view))) { ?>
+    , post_nickname: {required :true, minlength:2, maxlength:20}
+    , post_email: {required :true, email:true}
+        <?php } ?>
+        <?php if (service('memberService')->isMember() === false) { ?>
+    , post_password: {required :true, minlength:4, maxlength:100}
+    , captcha_key : {required: true, captchaKey:true}
+        <?php } ?>
+        <?php if (val('use_category', val('board', $view))) { ?>
+    , post_category : {required: true}
+        <?php } ?>
+    },
+        messages: {
+            captcha_key: '자동등록방지용 코드가 올바르지 않습니다.'
+        }
+    });
+});
+
+</script>
 <?= $this->endSection() ?>

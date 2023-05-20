@@ -49,7 +49,7 @@ if ( ! function_exists('thumb_url')) {
 if ( ! function_exists('thumbnail')) {
 	function thumbnail($type = '', $filename = '', $thumb_width = 0, $thumb_height = 0, $is_create = false, $is_crop = true, $crop_mode = 'center', $is_sharpen = false, $um_value = '80/0.5/3', $create_animate_thumb = false)
 	{
-		$source_file = config_item('uploads_dir') . '/';
+		$source_file = config_item('uploadsDir') . '/';
 		if ($type) {
 			$source_file .= $type . '/';
 		}
@@ -68,7 +68,7 @@ if ( ! function_exists('thumbnail')) {
 			return;
 		}
 
-		$uploadDir = config_item('uploads_dir') . '/cache/';
+		$uploadDir = config_item('uploadsDir') . '/cache/';
 		if (is_dir($uploadDir) === false) {
 			@mkdir($uploadDir, 0755);
 			@chmod($uploadDir, 0755);

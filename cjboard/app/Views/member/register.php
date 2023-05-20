@@ -130,6 +130,7 @@
     </div>
 </div>
 <script type="text/javascript" src="<?= base_url('static/js/member_register.js') ?>"></script>
+<script type="text/javascript" src="<?= base_url('static/js/captcha.js') ?>"></script>
 <script type="text/javascript">
 $(function() {
     $('#formRegister').validate({
